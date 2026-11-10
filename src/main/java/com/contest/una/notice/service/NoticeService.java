@@ -68,7 +68,7 @@ public class NoticeService {
                 .noticeId(savedNotice.getId())
                 .userLectureId(savedNotice.getUserLectureId())
                 .title(savedNotice.getTitle())
-                .imageUrl("/api/notice/" + savedNotice.getId() + "/image")
+                .imageUrl("/api/v1/notice/" + savedNotice.getId() + "/image")
                 .summary(savedNotice.getSummary())
                 .actionItems(savedNotice.getActionItems())
                 .eventCandidates(eventCandidates)

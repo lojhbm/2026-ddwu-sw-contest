@@ -3,6 +3,7 @@ package com.contest.una.global.exception;
 import com.contest.una.global.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -82,6 +83,24 @@ public class GlobalExceptionHandler {
                         "IMAGE_TOO_LARGE",
                         "이미지 용량 제한을 초과했습니다.",
                         List.of()
+                ));
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ErrorResponse> handleBinding(BindException e) {
+        List<ErrorResponse.FieldError> errors =
+                e.getBindingResult().getFieldErrors().stream()
+                        .map(error -> new ErrorResponse.FieldError(
+                                error.getField(),
+                                "입력 형식을 확인해 주세요."
+                        ))
+                        .toList();
+
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                        "VALIDATION_ERROR",
+                        "요청 값을 확인해 주세요.",
+                        errors
                 ));
     }
 }
