@@ -15,7 +15,6 @@ spring:
     open-in-view: false
     hibernate:
       # 스키마를 자동 변경하지 않습니다. 엔티티에 맞는 테이블을 먼저 생성하세요.
-      # 운영 환경에서는 Flyway/Liquibase 등으로 마이그레이션을 관리하세요.
       ddl-auto: validate
     properties:
       hibernate:
