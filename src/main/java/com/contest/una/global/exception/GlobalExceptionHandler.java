@@ -3,6 +3,7 @@ package com.contest.una.global.exception;
 import com.contest.una.global.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -56,6 +57,18 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         "INTERNAL_SERVER_ERROR",
                         "요청 처리 중 오류가 발생했습니다.",
+                        List.of()
+                ));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(
+            HttpMediaTypeNotSupportedException e
+    ) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(new ErrorResponse(
+                        "UNSUPPORTED_MEDIA_TYPE",
+                        "지원하지 않는 요청 형식입니다.",
                         List.of()
                 ));
     }
