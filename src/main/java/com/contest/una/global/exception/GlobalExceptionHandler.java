@@ -1,9 +1,12 @@
 package com.contest.una.global.exception;
 
 import com.contest.una.global.response.ErrorResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -26,5 +29,46 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.badRequest().body(response);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(
+            ResponseStatusException e
+    ) {
+        boolean tooLarge = e.getStatusCode().value() == 413;
+
+        ErrorResponse response = new ErrorResponse(
+                tooLarge ? "IMAGE_TOO_LARGE" : "HTTP_ERROR",
+                e.getReason() != null
+                        ? e.getReason()
+                        : "요청 처리에 실패했습니다.",
+                List.of()
+        );
+
+        return ResponseEntity.status(e.getStatusCode()).body(response);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpectedException(
+            Exception e
+    ) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                        "INTERNAL_SERVER_ERROR",
+                        "요청 처리 중 오류가 발생했습니다.",
+                        List.of()
+                ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(
+            MaxUploadSizeExceededException e
+    ) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new ErrorResponse(
+                        "IMAGE_TOO_LARGE",
+                        "이미지 용량 제한을 초과했습니다.",
+                        List.of()
+                ));
     }
 }
