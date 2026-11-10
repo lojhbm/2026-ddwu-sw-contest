@@ -5,13 +5,17 @@ import com.contest.una.notice.domain.NoticeEntity;
 import com.contest.una.notice.dto.EventCandidateResponseDto;
 import com.contest.una.notice.dto.NoticeCreateRequestDto;
 import com.contest.una.notice.dto.NoticeCreateResponseDto;
+import com.contest.una.notice.dto.NoticeDetailResponseDto;
 import com.contest.una.notice.repository.NoticeRepository;
 import com.contest.una.notice.storage.NoticeImageStorage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +24,6 @@ import java.util.List;
 public class NoticeService {
     private final NoticeRepository noticeRepository;
     private final NoticeImageStorage noticeImageStorage;
-
 
     @Transactional
     public NoticeCreateResponseDto createNotice(Long userId, NoticeCreateRequestDto request) {
@@ -80,4 +83,59 @@ public class NoticeService {
         return response;
         // TODO: DB 트랜잭션 롤백 시 저장된 이미지 파일 삭제
     }
+
+    @Transactional(readOnly = true)
+    public NoticeDetailResponseDto getNoticeDetail(Long userId, Long noticeId) {
+        if (noticeId == null || noticeId <= 0) {
+            throw new InvalidRequestException(
+                    "noticeId",
+                    "양의 정수 ID를 입력해 주세요."
+            );
+        }
+
+        NoticeEntity notice = noticeRepository
+                .findByIdAndUserId(noticeId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "NOTICE_NOT_FOUND"
+                ));
+
+        List<String> actionItems = notice.getActionItems() == null
+                ? new ArrayList<>()
+                : new ArrayList<>(notice.getActionItems());
+
+        List<EventCandidateResponseDto> eventCandidates =
+                notice.getEventCandidates() == null
+                        ? new ArrayList<>()
+                        : notice.getEventCandidates().stream()
+                          .map(candidate -> EventCandidateResponseDto.builder()
+                                            .title(candidate.getTitle())
+                                            .eventType(candidate.getEventType())
+                                            .eventDate(candidate.getEventDate() == null
+                                                       ? null
+                                                       : candidate.getEventDate().format(
+                                                    DateTimeFormatter.ISO_LOCAL_DATE))
+                                            .eventTime(candidate.getEventTime() == null
+                                                       ? null
+                                                       : candidate.getEventTime().format(
+                                                    DateTimeFormatter.ofPattern("HH:mm:ss")))
+                                            .memo(candidate.getMemo())
+                                            .build())
+                          .toList();
+
+        return NoticeDetailResponseDto.builder()
+                .noticeId(notice.getId())
+                .userLectureId(notice.getUserLectureId())
+                // TODO: 시간표 연동 후 실제 강의명 반환
+                .lectureName(null)
+                .title(notice.getTitle())
+                .imageUrl("/api/v1/notice/" + notice.getId() + "/image")
+                .summary(notice.getSummary())
+                .actionItems(actionItems)
+                .eventCandidates(eventCandidates)
+                .createdAt(notice.getCreatedAt())
+                .updatedAt(notice.getUpdatedAt())
+                .build();
+    }
+
 }

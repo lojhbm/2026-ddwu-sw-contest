@@ -40,15 +40,30 @@ public class NoticeEntity extends BaseTimeEntity {
     @Column(name = "action_items", nullable = false, columnDefinition = "json") // db에는 리스트를 json 타입으로 저장
     private List<String> actionItems = new ArrayList<>();
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "event_candidates")
+    private List<EventCandidate> eventCandidates = new ArrayList<>();
+
     @Builder
-    public NoticeEntity(Long userId, String title, Long userLectureId,
-                        String summary, String imagePath,
-                        List<String> actionItems) {
+    public NoticeEntity(
+            Long userId,
+            String title,
+            Long userLectureId,
+            String summary,
+            String imagePath,
+            List<String> actionItems,
+            List<EventCandidate> eventCandidates
+    ) {
         this.userId = userId;
         this.title = title;
         this.userLectureId = userLectureId;
         this.summary = summary;
         this.imagePath = imagePath;
-        this.actionItems = actionItems;
+        this.actionItems = actionItems == null
+                ? new ArrayList<>()
+                : new ArrayList<>(actionItems);
+        this.eventCandidates = eventCandidates == null
+                ? new ArrayList<>()
+                : new ArrayList<>(eventCandidates);
     }
 }

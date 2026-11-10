@@ -2,7 +2,6 @@ package com.contest.una.notice.dto;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -23,6 +22,4 @@ public class NoticeCreateResponseDto {
     private List<String> warnings = new ArrayList<>(); // 아직은 빈 배열로 구현, 추후 ai 기능 구현시 보완
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-
 }
