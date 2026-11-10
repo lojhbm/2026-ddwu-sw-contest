@@ -13,12 +13,12 @@ import java.util.List;
 @NoArgsConstructor
 public class NoticeCreateResponseDto {
     private Long noticeId;
-    private String LectureId;
+    private String userLectureId;
     private String title;
-    private String ImgeUrl;
+    private String imageUrl;
     private String summary;
-    private List<String> acctionItems;
-    private List<EventCandidateResponseDto> eventCandidates;
+    private List<String> actionItems = new ArrayList<>();
+    private List<EventCandidateResponseDto> eventCandidates = new ArrayList<>();
     private List<String> warnings = new ArrayList<>(); // 아직은 빈 배열로 구현, 추후 ai 기능 구현시 보완
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
