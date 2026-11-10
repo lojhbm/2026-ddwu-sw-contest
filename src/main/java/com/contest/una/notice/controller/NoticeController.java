@@ -3,7 +3,10 @@ package com.contest.una.notice.controller;
 import com.contest.una.notice.dto.NoticeCreateRequestDto;
 import com.contest.una.notice.dto.NoticeCreateResponseDto;
 import com.contest.una.notice.dto.NoticeDetailResponseDto;
+import com.contest.una.notice.dto.NoticeListResponse;
 import com.contest.una.notice.service.NoticeService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -51,6 +54,21 @@ public class NoticeController {
         noticeService.deleteNotice(userId, noticeId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public NoticeListResponse getNotices(
+            @RequestParam(name = "page", defaultValue = "0")
+            @Min(value = 0, message = "page는 0 이상이어야 합니다.")
+            int page,
+
+            @RequestParam(name = "size", defaultValue = "20")
+            @Min(value = 1, message = "size는 1 이상이어야 합니다.")
+            @Max(value = 100, message = "size는 100 이하여야 합니다.")
+            int size
+    ) {
+        Long userId = 1L; // 추후 회원 기능 구현 후, 회원 조회 기능 구현 예정
+        return noticeService.getNotices(page, size, userId);
     }
 
 }

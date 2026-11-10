@@ -2,13 +2,14 @@ package com.contest.una.notice.service;
 
 import com.contest.una.global.exception.InvalidRequestException;
 import com.contest.una.notice.domain.NoticeEntity;
-import com.contest.una.notice.dto.EventCandidateResponseDto;
-import com.contest.una.notice.dto.NoticeCreateRequestDto;
-import com.contest.una.notice.dto.NoticeCreateResponseDto;
-import com.contest.una.notice.dto.NoticeDetailResponseDto;
+import com.contest.una.notice.dto.*;
 import com.contest.una.notice.repository.NoticeRepository;
 import com.contest.una.notice.storage.NoticeImageStorage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -161,6 +162,40 @@ public class NoticeService {
         }
 
         noticeRepository.delete(notice);
+    }
+
+    @Transactional(readOnly = true)
+    public NoticeListResponse getNotices(int page, int size, Long userId) {
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "id"))
+        );
+
+        Page<NoticeEntity> noticePage =
+                noticeRepository.findByUserId(userId, pageable);
+
+        List<NoticeListItemResponse> items = noticePage.getContent()
+                .stream()
+                .map(notice -> new NoticeListItemResponse(
+                        notice.getId(),
+                        null, // userLectureId: 시간표 구현 후 연결
+                        null, // lectureName: 시간표 구현 후 연결
+                        notice.getTitle(),
+                        notice.getSummary(),
+                        notice.getCreatedAt()
+                ))
+                .toList();
+
+        return new NoticeListResponse(
+                items,
+                noticePage.getNumber(),
+                noticePage.getSize(),
+                noticePage.getTotalElements(),
+                noticePage.getTotalPages()
+        );
     }
 
 }
