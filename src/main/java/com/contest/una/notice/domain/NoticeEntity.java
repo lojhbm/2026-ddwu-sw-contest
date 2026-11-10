@@ -3,6 +3,7 @@ package com.contest.una.notice.domain;
 import com.contest.una.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -38,4 +39,16 @@ public class NoticeEntity extends BaseTimeEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "action_items", nullable = false, columnDefinition = "json") // db에는 리스트를 json 타입으로 저장
     private List<String> actionItems = new ArrayList<>();
+
+    @Builder
+    public NoticeEntity(Long userId, String title, Long userLectureId,
+                        String summary, String imagePath,
+                        List<String> actionItems) {
+        this.userId = userId;
+        this.title = title;
+        this.userLectureId = userLectureId;
+        this.summary = summary;
+        this.imagePath = imagePath;
+        this.actionItems = actionItems;
+    }
 }

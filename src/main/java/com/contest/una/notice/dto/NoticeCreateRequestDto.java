@@ -10,5 +10,5 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 public class NoticeCreateRequestDto {
     private MultipartFile image;
-    private String userLectureId;
+    private Long userLectureId;
 }
