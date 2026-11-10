@@ -2,6 +2,7 @@ package com.contest.una.notice.controller;
 
 import com.contest.una.notice.dto.NoticeCreateRequestDto;
 import com.contest.una.notice.dto.NoticeCreateResponseDto;
+import com.contest.una.notice.dto.NoticeDetailResponseDto;
 import com.contest.una.notice.service.NoticeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,4 +29,28 @@ public class NoticeController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(response);
     }
+
+    @GetMapping("/{noticeId}")
+    public ResponseEntity<NoticeDetailResponseDto> getNoticeDetail(
+            @PathVariable("noticeId") Long noticeId
+    ) {
+        // TODO: 사용자 조회·인증 연동 후 실제 사용자 ID로 교체
+        Long userId = 1L;
+
+        return ResponseEntity.ok(
+                noticeService.getNoticeDetail(userId, noticeId)
+        );
+    }
+
+    @DeleteMapping("/{noticeId}")
+    public ResponseEntity<Void> deleteNotice(
+            @PathVariable("noticeId") Long noticeId
+    ) {
+        Long userId = 1L;  // TODO: 인증 연동 시 로그인 사용자 ID로 교체
+
+        noticeService.deleteNotice(userId, noticeId);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

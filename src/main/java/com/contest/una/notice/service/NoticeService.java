@@ -138,4 +138,29 @@ public class NoticeService {
                 .build();
     }
 
+    @Transactional
+    public void deleteNotice(Long userId, Long noticeId) {
+        if (noticeId == null || noticeId <= 0) {
+            throw new InvalidRequestException(
+                    "noticeId",
+                    "양의 정수 ID를 입력해 주세요."
+            );
+        }
+
+        NoticeEntity notice = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "NOTICE_NOT_FOUND"
+                ));
+
+        if (!userId.equals(notice.getUserId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "NOTICE_NOT_FOUND"
+            );
+        }
+
+        noticeRepository.delete(notice);
+    }
+
 }
