@@ -136,4 +136,17 @@ public class GlobalExceptionHandler {
                         List.of()
                 ));
     }
+
+    @ExceptionHandler(DuplicateLoginIdException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateLoginId(
+            DuplicateLoginIdException e
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "DUPLICATE_LOGIN_ID",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
+
 }
