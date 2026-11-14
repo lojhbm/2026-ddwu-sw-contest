@@ -1,5 +1,6 @@
 package com.contest.una.notice.dto;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 public record NoticeListItemResponse(
@@ -8,7 +9,7 @@ public record NoticeListItemResponse(
         String lectureName,
         String title,
         String summary,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }
 
