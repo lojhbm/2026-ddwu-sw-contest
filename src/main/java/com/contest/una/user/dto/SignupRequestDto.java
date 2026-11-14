@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class SignupRequestDto {
 
     @NotBlank(message = "닉네임을 입력해 주세요.")
-    @Size(min = 1, max = 100, message = "닉네임은 1~100자여야 합니다.")
+    @Size(max = 100, message = "닉네임은 최대 100자까지 입력할 수 있습니다.")
     private String nickname;
 
     @NotBlank(message = "로그인 ID를 입력해 주세요.")

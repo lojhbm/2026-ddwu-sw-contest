@@ -113,7 +113,10 @@ public class GlobalExceptionHandler {
                 e.getBindingResult().getFieldErrors().stream()
                         .map(error -> new ErrorResponse.FieldError(
                                 error.getField(),
-                                "입력 형식을 확인해 주세요."
+                                error.isBindingFailure()
+                                        || error.getDefaultMessage() == null
+                                        ? "입력 형식을 확인해 주세요."
+                                        : error.getDefaultMessage()
                         ))
                         .toList();
 
@@ -124,6 +127,8 @@ public class GlobalExceptionHandler {
                         errors
                 ));
     }
+
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(
