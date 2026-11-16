@@ -35,7 +35,7 @@ CREATE TABLE `users` (
 CREATE TABLE `classrooms` (
                               `id`            BIGINT       NOT NULL AUTO_INCREMENT,
                               `building_name` VARCHAR(100) NOT NULL COMMENT '건물명',
-                              `room_number`   VARCHAR(50)  NOT NULL COMMENT '강의실 번호',
+                              `room_name`   VARCHAR(50)  NOT NULL COMMENT '강의실 이름',
                               `created_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                               `updated_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                               CONSTRAINT `PK_CLASSROOMS` PRIMARY KEY (`id`)

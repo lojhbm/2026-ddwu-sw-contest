@@ -3,7 +3,7 @@
 -- 실행 순서: classrooms -> lectures. id는 AUTO_INCREMENT가 아니므로 직접 지정.
 -- lectures 한 행 = 한 과목(분반)의 요일별 수업 한 덩어리. 같은 날 연속 교시(같은 강의실)는 한 행으로 합침.
 
-INSERT INTO classrooms (id, building_name, room_number) VALUES
+INSERT INTO classrooms (id, building_name, room_name) VALUES
     (1, '인문관', 'A301'),
     (2, '인문관', 'B301'),
     (3, '인문관', 'B303'),
