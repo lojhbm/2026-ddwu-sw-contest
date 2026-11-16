@@ -83,7 +83,7 @@ public class JwtTokenProvider {
     }
 
     // 로그인 응답의 expiresIn에 사용할 유효기간(초)
-    public long getExpiresInSeconds() {
-        return validityInMilliseconds / 1000;
+    public Integer getExpiresInSeconds() {
+        return Math.toIntExact(validityInMilliseconds / 1000);
     }
 }
