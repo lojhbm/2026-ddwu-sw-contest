@@ -1,6 +1,8 @@
 package com.contest.una.user.controller;
 
 import com.contest.una.user.domain.UserEntity;
+import com.contest.una.user.dto.LoginRequestDto;
+import com.contest.una.user.dto.LoginResponseDto;
 import com.contest.una.user.dto.SignupRequestDto;
 import com.contest.una.user.dto.SignupResponseDto;
 import com.contest.una.user.service.UserService;
@@ -8,10 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -45,5 +44,14 @@ public class UserController {
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDto> login(
+        @Valid @RequestBody LoginRequestDto request
+    ) {
+        LoginResponseDto response = userService.login(request.getLoginId(), request.getPassword());
+
+        return ResponseEntity.ok(response);
     }
 }
