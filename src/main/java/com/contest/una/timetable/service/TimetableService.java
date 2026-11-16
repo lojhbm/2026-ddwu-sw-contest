@@ -76,12 +76,18 @@ public class TimetableService {
                 .toList();
         validateNoTimeConflict(existing, requested);
 
+        String color;
+        if(request.color().isEmpty())
+            color = "gray";
+        else color = request.color();
+
         // 시간표 항목 생성 및 저장
         UserEntity user = userRepository.getReferenceById(userId);
         List<TimetableEntity> timetables = requested.stream()
                 .map(lecture -> TimetableEntity.builder()
                         .user(user)
                         .lecture(lecture)
+                        .color(color)
                         .build())
                 .toList();
 
@@ -96,6 +102,7 @@ public class TimetableService {
         return AddTimetableResponseDto.of(
                 request.academicYear(),
                 request.semester(),
+                color,
                 saved
         );
     }
