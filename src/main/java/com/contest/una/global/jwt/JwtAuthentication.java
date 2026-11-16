@@ -92,7 +92,7 @@ public class JwtAuthentication extends OncePerRequestFilter {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 "UNAUTHORIZED",
-                "유효한 인증 정보가 필요합니다.",
+                "로그인이 필요합니다.",
                 List.of()
         );
 
