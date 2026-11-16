@@ -1,13 +1,16 @@
 package com.contest.una.global.exception;
 
 import com.contest.una.global.response.ErrorResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
@@ -213,6 +216,55 @@ public class GlobalExceptionHandler {
                         "TIMETABLE_TIME_CONFLICT",
                         e.getMessage(),
                         List.of()
+                ));
+    }
+
+    // 쿼리 파라미터 검증 실패 (@Validated 사용 시) - 예: academicYear=0, semester=abc
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException e
+    ) {
+        List<ErrorResponse.FieldError> errors = e.getConstraintViolations().stream()
+                .map(v -> {
+                    String path = v.getPropertyPath().toString();
+                    String field = path.substring(path.lastIndexOf('.') + 1);
+                    return new ErrorResponse.FieldError(field, "입력 형식을 확인해 주세요.");
+                })
+                .toList();
+
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("VALIDATION_ERROR", "요청 값을 확인해 주세요.", errors));
+    }
+
+    // 쿼리 파라미터 검증 실패 (Spring Boot 3.2+, @Validated 없이 동작할 때)
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleMethodValidation(
+            HandlerMethodValidationException e
+    ) {
+        List<ErrorResponse.FieldError> errors = e.getParameterValidationResults().stream()
+                .map(r -> new ErrorResponse.FieldError(
+                        r.getMethodParameter().getParameterName(),
+                        "입력 형식을 확인해 주세요."
+                ))
+                .toList();
+
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse("VALIDATION_ERROR", "요청 값을 확인해 주세요.", errors));
+    }
+
+    // 필수 쿼리 파라미터 누락 - 예: semester 없이 요청
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(
+            MissingServletRequestParameterException e
+    ) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                        "VALIDATION_ERROR",
+                        "요청 값을 확인해 주세요.",
+                        List.of(new ErrorResponse.FieldError(
+                                e.getParameterName(),
+                                "필수 값입니다."
+                        ))
                 ));
     }
 }
