@@ -1,7 +1,10 @@
 package com.contest.una.user.service;
 
 import com.contest.una.global.exception.DuplicateLoginIdException;
+import com.contest.una.global.exception.InvalidCredentialsException;
+import com.contest.una.global.jwt.JwtTokenProvider;
 import com.contest.una.user.domain.UserEntity;
+import com.contest.una.user.dto.LoginResponseDto;
 import com.contest.una.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     // 회원가입
     @Transactional
@@ -28,6 +32,24 @@ public class UserService {
         UserEntity user = new UserEntity(loginId, encodedPassword, nickname);
 
         return userRepository.save(user); // save 메서드: user가 저장된 entity 반환
+    }
+
+    public LoginResponseDto login(String loginId, String password) {
+
+        // 아이디 존재 여부 확인
+        UserEntity user = userRepository.findByLoginId(loginId)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        // 비밀번호 일치 여부 확인
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+
+        // JWT 토큰 생성
+        String accessToken = jwtTokenProvider.createToken(user.getId());
+
+        return new LoginResponseDto(accessToken, "Bearer",
+                jwtTokenProvider.getExpiresInSeconds(), new LoginResponseDto.UserInfo(user.getId(), user.getNickname(), user.getLoginId()));
     }
 
 }
