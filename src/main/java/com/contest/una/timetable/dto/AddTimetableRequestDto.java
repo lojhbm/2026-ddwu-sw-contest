@@ -17,6 +17,8 @@ public record AddTimetableRequestDto(
         String semester,
 
         @NotEmpty @UniqueElements
-        List<@NotNull Long> lectureIds
+        List<@NotNull Long> lectureIds,
+
+        String color
 ) {
 }
