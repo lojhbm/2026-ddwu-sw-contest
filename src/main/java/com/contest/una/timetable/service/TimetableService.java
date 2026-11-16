@@ -35,7 +35,7 @@ public class TimetableService {
     ) {
         List<Long> lectureIds = request.lectureIds();
 
-        // 1. 요청한 연도·학기의 강의 조회 -> 하나라도 없으면 404
+        // 요청한 연도·학기의 강의 조회 -> 하나라도 없으면 404
         List<LectureEntity> lectures =
                 lectureRepository.findAllWithClassroomByIdInAndTerm(
                         lectureIds,
@@ -46,13 +46,13 @@ public class TimetableService {
             throw new LectureNotFoundException();
         }
 
-        // 2. 내 시간표에 이미 등록된 강의가 포함되어 있으면 409
+        // 내 시간표에 이미 등록된 강의가 포함되어 있으면 409
         if (timetableRepository.existsByUserIdAndLectureIdIn(
                 userId, lectureIds)) {
             throw new TimetableAlreadyExistsException();
         }
 
-        // 3. 요청한 lectureIds 순서대로 시간표 항목 생성
+        // 요청한 lectureIds 순서대로 시간표 항목 생성
         Map<Long, LectureEntity> lectureById = lectures.stream()
                 .collect(Collectors.toMap(
                         LectureEntity::getId,
@@ -67,7 +67,7 @@ public class TimetableService {
                         .build())
                 .toList();
 
-        // 4. 저장 (동시 요청으로 2번 검사를 통과해도 UNIQUE 제약이 막음 -> 409)
+        // 저장 (동시 요청으로 2번 검사를 통과해도 UNIQUE 제약이 막음 -> 409)
         List<TimetableEntity> saved;
         try {
             saved = timetableRepository.saveAll(timetables);
@@ -75,7 +75,7 @@ public class TimetableService {
             throw new TimetableAlreadyExistsException();
         }
 
-        // 5. 응답 변환
+        // 응답 변환
         return AddTimetableResponseDto.of(
                 request.academicYear(),
                 request.semester(),
