@@ -2,6 +2,7 @@ package com.contest.una.timetable.service;
 
 import com.contest.una.global.exception.LectureNotFoundException;
 import com.contest.una.global.exception.TimetableAlreadyExistsException;
+import com.contest.una.global.exception.TimetableTimeConflictException;
 import com.contest.una.timetable.domain.LectureEntity;
 import com.contest.una.timetable.domain.TimetableEntity;
 import com.contest.una.timetable.dto.AddTimetableRequestDto;
@@ -15,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -52,22 +54,37 @@ public class TimetableService {
             throw new TimetableAlreadyExistsException();
         }
 
-        // 요청한 lectureIds 순서대로 시간표 항목 생성
+        // 요청한 lectureIds 순서대로 강의 정렬
         Map<Long, LectureEntity> lectureById = lectures.stream()
                 .collect(Collectors.toMap(
                         LectureEntity::getId,
                         Function.identity()
                 ));
-        UserEntity user = userRepository.getReferenceById(userId);
+        List<LectureEntity> requested = lectureIds.stream()
+                .map(lectureById::get)
+                .toList();
 
-        List<TimetableEntity> timetables = lectureIds.stream()
-                .map(lectureId -> TimetableEntity.builder()
+        // 시간 겹침 검사 (같은 학기 기존 시간표 + 이번 요청 안의 강의끼리) -> 409
+        List<LectureEntity> existing = timetableRepository
+                .findAllByUserIdAndTerm(
+                        userId,
+                        request.academicYear(),
+                        request.semester()
+                )
+                .stream()
+                .map(TimetableEntity::getLecture)
+                .toList();
+        validateNoTimeConflict(existing, requested);
+
+        // 시간표 항목 생성 및 저장
+        UserEntity user = userRepository.getReferenceById(userId);
+        List<TimetableEntity> timetables = requested.stream()
+                .map(lecture -> TimetableEntity.builder()
                         .user(user)
-                        .lecture(lectureById.get(lectureId))
+                        .lecture(lecture)
                         .build())
                 .toList();
 
-        // 저장 (동시 요청으로 2번 검사를 통과해도 UNIQUE 제약이 막음 -> 409)
         List<TimetableEntity> saved;
         try {
             saved = timetableRepository.saveAll(timetables);
@@ -81,5 +98,18 @@ public class TimetableService {
                 request.semester(),
                 saved
         );
+    }
+
+    private void validateNoTimeConflict(
+            List<LectureEntity> existing,
+            List<LectureEntity> requested
+    ) {
+        List<LectureEntity> occupied = new ArrayList<>(existing);
+        for (LectureEntity lecture : requested) {
+            if (occupied.stream().anyMatch(lecture::overlapsWith)) {
+                throw new TimetableTimeConflictException();
+            }
+            occupied.add(lecture);
+        }
     }
 }
