@@ -3,6 +3,7 @@ package com.contest.una.global.exception;
 import com.contest.una.global.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -166,4 +167,40 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(LectureNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleLectureNotFound(
+            LectureNotFoundException e
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "LECTURE_NOT_FOUND",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
+
+    @ExceptionHandler(TimetableAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleTimetableAlreadyExists(
+            TimetableAlreadyExistsException e
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "TIMETABLE_ALREADY_EXISTS",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
+
+    // 본문이 비었거나 JSON 형식·타입이 맞지 않을 때 (예: lectureIds에 "abc")
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleNotReadable(
+            HttpMessageNotReadableException e
+    ) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                        "VALIDATION_ERROR",
+                        "요청 값을 확인해 주세요.",
+                        List.of()
+                ));
+    }
 }
