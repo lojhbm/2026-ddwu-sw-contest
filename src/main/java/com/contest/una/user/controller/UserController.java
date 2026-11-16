@@ -54,4 +54,11 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        // 서버 측 토큰 무효화는 하지 않음 (클라이언트가 토큰 삭제)
+        // 인증 실패(401)는 시큐리티 필터에서 처리됨
+        return ResponseEntity.noContent().build();
+    }
 }

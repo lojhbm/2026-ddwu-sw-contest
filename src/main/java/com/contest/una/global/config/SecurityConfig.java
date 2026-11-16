@@ -55,14 +55,14 @@ public class SecurityConfig {
 
                 // 인증 및 권한 오류를 공통 응답 형식으로 반환
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(
+                       .authenticationEntryPoint(
                                 (request, response, authException) ->
                                         writeErrorResponse(
                                                 response,
                                                 objectMapper,
                                                 HttpServletResponse.SC_UNAUTHORIZED,
                                                 "UNAUTHORIZED",
-                                                "유효한 인증 정보가 필요합니다."
+                                                "로그인이 필요합니다."
                                         )
                         )
                         .accessDeniedHandler(
