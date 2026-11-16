@@ -15,7 +15,8 @@ public record TimetableItemResponse(
         Integer academicYear,
         String semester,        // 1 / summer / 2 / winter
         ClassroomResponse classroom, // 온라인 또는 미정이면 null
-        Integer dayOfWeek,      // 월요일 1 ~ 일요일 7
+        Integer dayOfWeek,// 월요일 1 ~ 일요일 7
+        String color,
         @JsonFormat(pattern = "HH:mm:ss") LocalTime startsAt,
         @JsonFormat(pattern = "HH:mm:ss") LocalTime endsAt
 ) {

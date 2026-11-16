@@ -131,7 +131,6 @@ public class TimetableService {
                 .stream()
                 .map(this::toItemResponse)
                 .toList();
-
         return new TimetableListResponse(academicYear, semester, items);
     }
 
@@ -158,6 +157,7 @@ public class TimetableService {
                 lecture.getSemester(),
                 classroomResponse,
                 lecture.getTimeWeek(),
+                timetable.getColor(),
                 lecture.getTimeStartsAt(),
                 lecture.getTimeEndsAt()
         );
