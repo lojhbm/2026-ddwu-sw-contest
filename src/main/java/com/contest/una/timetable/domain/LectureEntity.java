@@ -59,4 +59,10 @@ public class LectureEntity extends BaseTimeEntity {
         this.timeStartsAt = timeStartsAt;
         this.timeEndsAt = timeEndsAt;
     }
+
+    public boolean overlapsWith(LectureEntity other) {
+        return this.timeWeek.equals(other.timeWeek)
+                && this.timeStartsAt.isBefore(other.timeEndsAt)
+                && other.timeStartsAt.isBefore(this.timeEndsAt);
+    }
 }

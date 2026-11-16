@@ -203,4 +203,16 @@ public class GlobalExceptionHandler {
                         List.of()
                 ));
     }
+
+    @ExceptionHandler(TimetableTimeConflictException.class)
+    public ResponseEntity<ErrorResponse> handleTimetableTimeConflict(
+            TimetableTimeConflictException e
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "TIMETABLE_TIME_CONFLICT",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
 }
