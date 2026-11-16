@@ -1,12 +1,12 @@
 package com.contest.una.timetable.service;
 
+import com.contest.una.classroom.domain.ClassroomEntity;
 import com.contest.una.global.exception.LectureNotFoundException;
 import com.contest.una.global.exception.TimetableAlreadyExistsException;
 import com.contest.una.global.exception.TimetableTimeConflictException;
 import com.contest.una.timetable.domain.LectureEntity;
 import com.contest.una.timetable.domain.TimetableEntity;
-import com.contest.una.timetable.dto.AddTimetableRequestDto;
-import com.contest.una.timetable.dto.AddTimetableResponseDto;
+import com.contest.una.timetable.dto.*;
 import com.contest.una.timetable.repository.LectureRepository;
 import com.contest.una.timetable.repository.TimetableRepository;
 import com.contest.una.user.domain.UserEntity;
@@ -111,5 +111,48 @@ public class TimetableService {
             }
             occupied.add(lecture);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public TimetableListResponse getTimetable(
+            Long userId,
+            Integer academicYear,
+            String semester
+    ) {
+        List<TimetableItemResponse> items = timetableRepository
+                .findAllByUserIdAndTerm(userId, academicYear, semester)
+                .stream()
+                .map(this::toItemResponse)
+                .toList();
+
+        return new TimetableListResponse(academicYear, semester, items);
+    }
+
+    private TimetableItemResponse toItemResponse(TimetableEntity timetable) {
+        LectureEntity lecture = timetable.getLecture();
+        ClassroomEntity classroom = lecture.getClassroom();
+
+        // 온라인 또는 미정이면 classroom = null
+        ClassroomResponse classroomResponse = (classroom == null)
+                ? null
+                : new ClassroomResponse(
+                classroom.getId(),
+                classroom.getBuildingName(),
+                classroom.getRoomName()
+        );
+
+        return new TimetableItemResponse(
+                timetable.getId(),
+                lecture.getId(),
+                lecture.getName(),
+                lecture.getCourseCode(),
+                lecture.getSectionCode(),
+                lecture.getAcademicYear(),
+                lecture.getSemester(),
+                classroomResponse,
+                lecture.getTimeWeek(),
+                lecture.getTimeStartsAt(),
+                lecture.getTimeEndsAt()
+        );
     }
 }
