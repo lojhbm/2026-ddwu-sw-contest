@@ -26,7 +26,7 @@ import java.util.Map;
  * Gemini generateContent REST API 호출 담당.
  * - 503/429(및 네트워크 오류)는 같은 모델로 재시도하고, 계속 실패하면 fallback 모델로 넘어간다.
  * - 모델을 찾을 수 없는 404는 재시도 없이 바로 fallback 모델로 넘어간다.
- * - 응답 시간 초과는 재시도하지 않고 AiAnalysisTimeoutException(504)을 던진다.
+ * - 응답 시간 초과는 같은 모델로 재시도하지 않고 fallback 모델로 넘어간다. fallback이 없으면 AiAnalysisTimeoutException(504)을 던진다.
  * - 그 외 실패는 AiAnalysisFailedException(502)을 던진다.
  */
 @Slf4j
@@ -35,6 +35,7 @@ public class GeminiClient {
 
     private static final int MAX_ATTEMPTS_PER_MODEL = 2;
     private static final int NETWORK_ERROR = -1;
+    private static final int TIMEOUT = -2;
     private static final int LOG_BODY_LIMIT = 500;
 
     private final GeminiProperties properties;
@@ -80,6 +81,14 @@ public class GeminiClient {
 
                 if (status == 200) {
                     return extractText(response.body(), model);
+                }
+
+                if (status == TIMEOUT) {
+                    if (hasNextModel) {
+                        log.warn("Gemini 응답 시간 초과, fallback 모델로 전환합니다. model={}", model);
+                        break;
+                    }
+                    throw new AiAnalysisTimeoutException();
                 }
 
                 boolean retryable = status == 429 || status == 503 || status == NETWORK_ERROR;
@@ -133,9 +142,8 @@ public class GeminiClient {
             return new Response(response.statusCode(), response.body());
 
         } catch (HttpTimeoutException e) {
-            // 연결/응답 시간 초과: 더 기다려도 의미가 없으므로 재시도 없이 504
             log.error("Gemini 응답 시간이 초과되었습니다. model={}", model, e);
-            throw new AiAnalysisTimeoutException(e);
+            return new Response(TIMEOUT, String.valueOf(e.getMessage()));
 
         } catch (IOException e) {
             log.warn("Gemini 호출 중 네트워크 오류가 발생했습니다. model={}", model, e);
