@@ -4,12 +4,12 @@ server:
 spring:
   application:
     name: school-calendar
-
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    
 
   jpa:
     open-in-view: false
@@ -37,3 +37,12 @@ logging:
 jwt:
   secret: ${JWT_SECRET}
   expire-length: 3600000 # 1시간, 밀리초 단위
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: gemini-3.8-flash
+  fallback-model: gemini-3.1-flash-lite # 기본 모델이 503/429로 계속 실패하거나 404일 때 사용. 비우면 fallback 없음
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  connect-timeout-seconds: 5
+  read-timeout-seconds: 30
+  thinking-level: low # 모델이 지원하지 않아 400이 나면 이 줄을 삭제

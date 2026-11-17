@@ -1,15 +1,21 @@
 package com.contest.una.notice.storage;
 
+import com.contest.una.global.exception.ImageNotFoundException;
+import com.contest.una.global.exception.ImageTooLargeException;
+import com.contest.una.global.exception.ImageUnreadableException;
 import com.contest.una.global.exception.InvalidRequestException;
+import com.contest.una.global.exception.UnsupportedImageFormatException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -18,6 +24,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class NoticeImageStorage {
 
@@ -44,10 +51,7 @@ public class NoticeImageStorage {
 
         // 파일 용량 검증
         if (image.getSize() > MAX_FILE_SIZE) {
-            throw new ResponseStatusException(
-                    HttpStatus.PAYLOAD_TOO_LARGE,
-                    "이미지 용량 제한을 초과했습니다."
-            );
+            throw new ImageTooLargeException();
         }
 
         // 실제 이미지 형식 검증
@@ -83,21 +87,61 @@ public class NoticeImageStorage {
         }
     }
 
+    // 저장된 이미지 파일을 Resource로 반환
+    public Resource load(String filename) {
+        Path file = resolveInUploadDirectory(filename);
+
+        // 업로드 디렉터리 밖의 경로이거나 파일이 없으면 이미지 없음
+        if (file == null || !Files.isRegularFile(file)) {
+            throw new ImageNotFoundException();
+        }
+
+        return new FileSystemResource(file);
+    }
+
+    // 저장된 이미지 파일 삭제. 파일이 없거나 삭제에 실패해도 예외를 던지지 않음
+    public void delete(String filename) {
+        Path file = resolveInUploadDirectory(filename);
+
+        if (file == null) {
+            log.warn("업로드 디렉터리 밖의 경로라 이미지를 삭제하지 않았습니다. filename={}", filename);
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            log.warn("이미지 파일 삭제에 실패했습니다. filename={}", filename, e);
+        }
+    }
+
+    // 업로드 디렉터리 안쪽 경로만 허용 (../ 등을 이용한 경로 조작 방지)
+    private Path resolveInUploadDirectory(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return null;
+        }
+
+        Path file = uploadDirectory.resolve(filename).normalize();
+
+        return file.startsWith(uploadDirectory) ? file : null;
+    }
+
     private String validateImage(MultipartFile image) {
         try (
                 InputStream input = image.getInputStream();
                 ImageInputStream imageInput =
                         ImageIO.createImageInputStream(input)
         ) {
+            // 이미지로 인식할 수 없는 파일 -> 415
             if (imageInput == null) {
-                throw invalidImage();
+                throw new UnsupportedImageFormatException();
             }
 
             Iterator<ImageReader> readers =
                     ImageIO.getImageReaders(imageInput);
 
             if (!readers.hasNext()) {
-                throw invalidImage();
+                throw new UnsupportedImageFormatException();
             }
 
             ImageReader reader = readers.next();
@@ -106,17 +150,26 @@ public class NoticeImageStorage {
                 String format = reader.getFormatName()
                         .toLowerCase(Locale.ROOT);
 
+                // PNG/JPEG가 아닌 형식 -> 415
                 String extension = switch (format) {
                     case "jpeg", "jpg" -> "jpg";
                     case "png" -> "png";
-                    default -> throw invalidImage();
+                    default -> throw new UnsupportedImageFormatException();
                 };
 
                 reader.setInput(imageInput);
 
-                // 실제로 이미지를 읽을 수 있는지 검증
-                if (reader.read(0) == null) {
-                    throw invalidImage();
+                // PNG/JPEG로 인식되지만 실제로 읽을 수 없는 이미지 -> 422
+                // (try 안에서 우리가 던지는 예외까지 잡지 않도록 read만 감쌈)
+                BufferedImage decoded;
+                try {
+                    decoded = reader.read(0);
+                } catch (IOException | RuntimeException e) {
+                    throw new ImageUnreadableException(e);
+                }
+
+                if (decoded == null) {
+                    throw new ImageUnreadableException();
                 }
 
                 return extension;
@@ -126,14 +179,8 @@ public class NoticeImageStorage {
             }
 
         } catch (IOException e) {
-            throw invalidImage();
+            // 업로드된 파일 스트림 자체를 읽지 못한 경우
+            throw new ImageUnreadableException(e);
         }
-    }
-
-    private InvalidRequestException invalidImage() {
-        return new InvalidRequestException(
-                "image",
-                "읽을 수 있는 PNG 또는 JPEG 이미지를 업로드해 주세요."
-        );
     }
 }
