@@ -425,6 +425,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    // 존재하지 않는 시설
     @ExceptionHandler(SpaceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSpaceNotFound(
             SpaceNotFoundException e
