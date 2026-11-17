@@ -162,6 +162,32 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    // Gemini 호출이 재시도·fallback 후에도 실패했거나 응답을 사용할 수 없는 경우 -> 502
+    @ExceptionHandler(AiAnalysisFailedException.class)
+    public ResponseEntity<ErrorResponse> handleAiAnalysisFailed(
+            AiAnalysisFailedException e
+    ) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(
+                        "AI_ANALYSIS_FAILED",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
+
+    // Gemini 응답을 제한 시간 안에 받지 못한 경우 -> 504
+    @ExceptionHandler(AiAnalysisTimeoutException.class)
+    public ResponseEntity<ErrorResponse> handleAiAnalysisTimeout(
+            AiAnalysisTimeoutException e
+    ) {
+        return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                .body(new ErrorResponse(
+                        "AI_ANALYSIS_TIMEOUT",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
+
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ErrorResponse> handleBinding(BindException e) {
         List<ErrorResponse.FieldError> errors =
