@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,10 +26,9 @@ public class NoticeController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<NoticeCreateResponseDto> createNotice(
+            @AuthenticationPrincipal Long userId,
             @ModelAttribute NoticeCreateRequestDto request) {
         // 이미지가 포함된 multipart/form-data 요청이므로 @ModelAttribute를 사용
-
-        Long userId = 1L; // Todo: 추후 회원 기능 개발 시 액세스 토큰을 통한 userId 조회 기능 구현
 
         NoticeCreateResponseDto response =
                 noticeService.createNotice(userId, request);
@@ -39,11 +39,9 @@ public class NoticeController {
 
     @GetMapping("/{noticeId}")
     public ResponseEntity<NoticeDetailResponseDto> getNoticeDetail(
+            @AuthenticationPrincipal Long userId,
             @PathVariable("noticeId") Long noticeId
     ) {
-        // TODO: 사용자 조회·인증 연동 후 실제 사용자 ID로 교체
-        Long userId = 1L;
-
         return ResponseEntity.ok(
                 noticeService.getNoticeDetail(userId, noticeId)
         );
@@ -51,11 +49,9 @@ public class NoticeController {
 
     @GetMapping("/{noticeId}/image")
     public ResponseEntity<Resource> getNoticeImage(
+            @AuthenticationPrincipal Long userId,
             @PathVariable("noticeId") Long noticeId
     ) {
-        // TODO: 인증 연동 시 로그인 사용자 ID로 교체
-        Long userId = 1L;
-
         Resource image = noticeService.getNoticeImage(userId, noticeId);
 
         // 파일 확장자(png, jpg)로 Content-Type 결정
@@ -72,9 +68,9 @@ public class NoticeController {
 
     @DeleteMapping("/{noticeId}")
     public ResponseEntity<Void> deleteNotice(
+            @AuthenticationPrincipal Long userId,
             @PathVariable("noticeId") Long noticeId
     ) {
-        Long userId = 1L;  // TODO: 인증 연동 시 로그인 사용자 ID로 교체
 
         noticeService.deleteNotice(userId, noticeId);
 
@@ -83,17 +79,15 @@ public class NoticeController {
 
     @GetMapping
     public NoticeListResponse getNotices(
+            @AuthenticationPrincipal Long userId,
             @RequestParam(name = "page", defaultValue = "0")
             @Min(value = 0, message = "page는 0 이상이어야 합니다.")
             int page,
-
             @RequestParam(name = "size", defaultValue = "20")
             @Min(value = 1, message = "size는 1 이상이어야 합니다.")
             @Max(value = 100, message = "size는 100 이하여야 합니다.")
             int size
     ) {
-        Long userId = 1L; // 추후 회원 기능 구현 후, 회원 조회 기능 구현 예정
         return noticeService.getNotices(page, size, userId);
     }
-
 }

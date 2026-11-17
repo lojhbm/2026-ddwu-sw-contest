@@ -13,6 +13,9 @@ public interface TimetableRepository extends JpaRepository<TimetableEntity, Long
     // 내 시간표에 요청한 강의 중 하나라도 이미 있으면 true -> 409
     boolean existsByUserIdAndLectureIdIn(Long userId, Collection<Long> lectureIds);
 
+    // 본인 소유의 시간표 항목(timetable.id)인지 확인 -> 없으면 404 TIMETABLE_NOT_FOUND
+    boolean existsByIdAndUserId(Long id, Long userId);
+
     @Query("""
         select t from TimetableEntity t
         join fetch t.lecture l
