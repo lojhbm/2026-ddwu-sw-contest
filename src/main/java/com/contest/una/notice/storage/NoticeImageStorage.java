@@ -1,10 +1,14 @@
 package com.contest.una.notice.storage;
 
+import com.contest.una.global.exception.ImageNotFoundException;
 import com.contest.una.global.exception.ImageTooLargeException;
 import com.contest.una.global.exception.ImageUnreadableException;
 import com.contest.una.global.exception.InvalidRequestException;
 import com.contest.una.global.exception.UnsupportedImageFormatException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +24,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class NoticeImageStorage {
 
@@ -80,6 +85,45 @@ public class NoticeImageStorage {
                     e
             );
         }
+    }
+
+    // 저장된 이미지 파일을 Resource로 반환
+    public Resource load(String filename) {
+        Path file = resolveInUploadDirectory(filename);
+
+        // 업로드 디렉터리 밖의 경로이거나 파일이 없으면 이미지 없음
+        if (file == null || !Files.isRegularFile(file)) {
+            throw new ImageNotFoundException();
+        }
+
+        return new FileSystemResource(file);
+    }
+
+    // 저장된 이미지 파일 삭제. 파일이 없거나 삭제에 실패해도 예외를 던지지 않음
+    public void delete(String filename) {
+        Path file = resolveInUploadDirectory(filename);
+
+        if (file == null) {
+            log.warn("업로드 디렉터리 밖의 경로라 이미지를 삭제하지 않았습니다. filename={}", filename);
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            log.warn("이미지 파일 삭제에 실패했습니다. filename={}", filename, e);
+        }
+    }
+
+    // 업로드 디렉터리 안쪽 경로만 허용 (../ 등을 이용한 경로 조작 방지)
+    private Path resolveInUploadDirectory(String filename) {
+        if (filename == null || filename.isBlank()) {
+            return null;
+        }
+
+        Path file = uploadDirectory.resolve(filename).normalize();
+
+        return file.startsWith(uploadDirectory) ? file : null;
     }
 
     private String validateImage(MultipartFile image) {

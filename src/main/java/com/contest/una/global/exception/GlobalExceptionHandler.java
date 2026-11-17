@@ -69,6 +69,19 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    // 공지는 있으나 저장된 이미지 파일이 없는 경우 -> 404
+    @ExceptionHandler(ImageNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleImageNotFound(
+            ImageNotFoundException e
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "IMAGE_NOT_FOUND",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException e

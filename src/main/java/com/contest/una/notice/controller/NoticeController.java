@@ -8,8 +8,12 @@ import com.contest.una.notice.service.NoticeService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +25,7 @@ public class NoticeController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<NoticeCreateResponseDto> createNotice(
-             @ModelAttribute NoticeCreateRequestDto request) {
+            @ModelAttribute NoticeCreateRequestDto request) {
         // 이미지가 포함된 multipart/form-data 요청이므로 @ModelAttribute를 사용
 
         Long userId = 1L; // Todo: 추후 회원 기능 개발 시 액세스 토큰을 통한 userId 조회 기능 구현
@@ -43,6 +47,27 @@ public class NoticeController {
         return ResponseEntity.ok(
                 noticeService.getNoticeDetail(userId, noticeId)
         );
+    }
+
+    @GetMapping("/{noticeId}/image")
+    public ResponseEntity<Resource> getNoticeImage(
+            @PathVariable("noticeId") Long noticeId
+    ) {
+        // TODO: 인증 연동 시 로그인 사용자 ID로 교체
+        Long userId = 1L;
+
+        Resource image = noticeService.getNoticeImage(userId, noticeId);
+
+        // 파일 확장자(png, jpg)로 Content-Type 결정
+        MediaType mediaType = MediaTypeFactory.getMediaType(image)
+                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                .header("X-Content-Type-Options", "nosniff")
+                .cacheControl(CacheControl.empty().cachePrivate())
+                .body(image);
     }
 
     @DeleteMapping("/{noticeId}")
