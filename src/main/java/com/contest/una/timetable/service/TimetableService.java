@@ -1,10 +1,13 @@
 package com.contest.una.timetable.service;
 
 import com.contest.una.classroom.domain.ClassroomEntity;
+import com.contest.una.event.repository.EventRepository;
 import com.contest.una.global.exception.LectureNotFoundException;
 import com.contest.una.global.exception.TimetableAlreadyExistsException;
+import com.contest.una.global.exception.TimetableInUseException;
 import com.contest.una.global.exception.TimetableNotFoundException;
 import com.contest.una.global.exception.TimetableTimeConflictException;
+import com.contest.una.notice.repository.NoticeRepository;
 import com.contest.una.timetable.domain.LectureEntity;
 import com.contest.una.timetable.domain.TimetableEntity;
 import com.contest.una.timetable.dto.*;
@@ -30,6 +33,8 @@ public class TimetableService {
     private final TimetableRepository timetableRepository;
     private final LectureRepository lectureRepository;
     private final UserRepository userRepository;
+    private final NoticeRepository noticeRepository;
+    private final EventRepository eventRepository;
 
     @Transactional
     public AddTimetableResponseDto addTimetable(
@@ -183,5 +188,22 @@ public class TimetableService {
         timetables.forEach(timetable -> timetable.updateColor(request.color()));
 
         return UpdateTimetableColorResponse.from(timetables);
+    }
+
+    @Transactional
+    public void deleteTimetable(Long userId, Long timetableId) {
+        // 본인 소유의 시간표 항목이 아니면 404 (타인의 항목도 존재 여부를 드러내지 않음)
+        if (!timetableRepository.existsByIdAndUserId(timetableId, userId)) {
+            throw new TimetableNotFoundException();
+        }
+
+        // 공지 또는 일정이 이 시간표 항목을 참조하면 삭제 불가 -> 409
+        // (404 검증 후 409 검증 순서. 외래키가 없어 DB가 막아주지 않으므로 직접 확인)
+        if (noticeRepository.existsByUserLectureId(timetableId)
+                || eventRepository.existsByUserLectureId(timetableId)) {
+            throw new TimetableInUseException();
+        }
+
+        timetableRepository.deleteById(timetableId);
     }
 }
