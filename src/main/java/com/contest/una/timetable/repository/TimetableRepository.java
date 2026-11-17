@@ -38,4 +38,12 @@ public interface TimetableRepository extends JpaRepository<TimetableEntity, Long
     List<TimetableEntity> findAllWithLectureByIdInAndUserId(
             @Param("timetableIds") Collection<Long> timetableIds,
             @Param("userId") Long userId);
+
+    @Query("""
+        select t from TimetableEntity t
+        join fetch t.lecture l
+        where t.user.id = :userId
+        order by l.academicYear desc, t.id desc
+        """)
+    List<TimetableEntity> findAllWithLectureByUserId(@Param("userId") Long userId);
 }

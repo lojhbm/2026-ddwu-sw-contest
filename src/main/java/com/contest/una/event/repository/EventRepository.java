@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +40,21 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
 
     // 해당 시간표 항목(timetable.id)에 연결된 일정이 있는지 확인 -> 시간표 항목 삭제 시 409
     boolean existsByUserLectureId(Long userLectureId);
+
+    boolean existsBySourceImageId(Long sourceImageId);
+
+    @Query("""
+            select count(e) from EventEntity e
+            where e.userId = :userId
+              and e.title = :title
+              and e.eventDate = :eventDate
+              and ((:eventTime is null and e.eventTime is null) or e.eventTime = :eventTime)
+              and ((:userLectureId is null and e.userLectureId is null) or e.userLectureId = :userLectureId)
+            """)
+    long countSame(
+            @Param("userId") Long userId,
+            @Param("title") String title,
+            @Param("eventDate") LocalDate eventDate,
+            @Param("eventTime") LocalTime eventTime,
+            @Param("userLectureId") Long userLectureId);
 }
