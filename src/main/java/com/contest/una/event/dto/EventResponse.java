@@ -4,11 +4,11 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 
+// 일정 단건 조회 응답이자 일정 목록 조회의 items[] 요소
 @Getter
 @Builder
-public class EventCreateResponseDto {
+public class EventResponse {
     private Long eventId;
     private Long sourceNoticeId;
     private Long userLectureId;
