@@ -7,12 +7,15 @@ import com.contest.una.notice.dto.*;
 import com.contest.una.notice.repository.NoticeRepository;
 import com.contest.una.notice.storage.NoticeImageStorage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.format.DateTimeFormatter;
@@ -153,6 +156,42 @@ public class NoticeService {
         }
 
         noticeRepository.delete(notice);
+
+        // DB 삭제가 커밋된 뒤에 이미지 파일 삭제 (롤백됐는데 파일만 지워지는 것을 방지)
+        deleteImageAfterCommit(notice.getImagePath());
+    }
+
+    private void deleteImageAfterCommit(String filename) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            noticeImageStorage.delete(filename);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        noticeImageStorage.delete(filename);
+                    }
+                }
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Resource getNoticeImage(Long userId, Long noticeId) {
+        if (noticeId == null || noticeId <= 0) {
+            throw new InvalidRequestException(
+                    "noticeId",
+                    "양의 정수 ID를 입력해 주세요."
+            );
+        }
+
+        // 본인 소유의 공지만 조회. 없거나 타인의 공지면 404
+        NoticeEntity notice = noticeRepository
+                .findByIdAndUserId(noticeId, userId)
+                .orElseThrow(NoticeNotFoundException::new);
+
+        return noticeImageStorage.load(notice.getImagePath());
     }
 
     @Transactional(readOnly = true)
