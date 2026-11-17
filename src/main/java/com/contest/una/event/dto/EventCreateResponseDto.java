@@ -9,14 +9,14 @@ import java.time.OffsetDateTime;
 @Getter
 @Builder
 public class EventCreateResponseDto {
-    private final Long eventId;
-    private final Long sourceNoticeId;
-    private final Long userLectureId;
-    private final String title;
-    private final String eventType;
-    private final String eventDate;  // YYYY-MM-DD
-    private final String eventTime;  // HH:mm:ss, 미지정이면 null
-    private final String memo;
-    private final Instant createdAt;
-    private final Instant updatedAt;
+    private Long eventId;
+    private Long sourceNoticeId;
+    private Long userLectureId;
+    private String title;
+    private String eventType;
+    private String eventDate;  // YYYY-MM-DD
+    private String eventTime;  // HH:mm:ss, 미지정이면 null
+    private String memo;
+    private Instant createdAt;
+    private Instant updatedAt;
 }
