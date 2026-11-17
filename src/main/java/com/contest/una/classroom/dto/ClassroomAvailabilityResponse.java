@@ -28,7 +28,7 @@ public class ClassroomAvailabilityResponse {
     @Getter
     @Builder
     public static class ClassroomItem {
-        private String classroomId;              // classrooms.id (명세상 문자열)
+        private long classroomId;              // classrooms.id (명세상 문자열)
         private String roomName;                 // classrooms.room_name
         private String nextLectureStartTime;     // HH:mm, 이후 수업이 없으면 null
     }

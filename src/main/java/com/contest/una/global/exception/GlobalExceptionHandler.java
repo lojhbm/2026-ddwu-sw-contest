@@ -424,4 +424,17 @@ public class GlobalExceptionHandler {
                         List.of()
                 ));
     }
+
+    // 존재하지 않는 시설
+    @ExceptionHandler(SpaceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpaceNotFound(
+            SpaceNotFoundException e
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "SPACE_NOT_FOUND",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
 }
