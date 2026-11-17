@@ -1,5 +1,6 @@
 package com.contest.una.notice.service;
 
+import com.contest.una.event.repository.EventRepository;
 import com.contest.una.global.exception.InvalidRequestException;
 import com.contest.una.global.exception.NoticeNotFoundException;
 import com.contest.una.notice.domain.NoticeEntity;
@@ -27,6 +28,7 @@ import java.util.List;
 public class NoticeService {
     private final NoticeRepository noticeRepository;
     private final NoticeImageStorage noticeImageStorage;
+    private final EventRepository eventRepository;
 
     @Transactional
     public NoticeCreateResponseDto createNotice(Long userId, NoticeCreateRequestDto request) {
@@ -154,6 +156,9 @@ public class NoticeService {
         if (!userId.equals(notice.getUserId())) {
             throw new NoticeNotFoundException();
         }
+
+        // 이 공지를 출처로 한 일정은 유지하고 sourceNoticeId만 null로 변경
+        eventRepository.clearSourceNotice(noticeId);
 
         noticeRepository.delete(notice);
 
