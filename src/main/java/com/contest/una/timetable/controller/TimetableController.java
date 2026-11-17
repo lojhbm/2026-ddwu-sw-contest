@@ -50,4 +50,14 @@ public class TimetableController {
     ) {
         return ResponseEntity.ok(timetableService.updateColor(userId, timetableIds, request));
     }
+
+    // 시간표에서 과목(시간표 항목) 하나를 삭제
+    @DeleteMapping("/{timetableId}")
+    public ResponseEntity<Void> deleteTimetable(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("timetableId") @Positive Long timetableId
+    ) {
+        timetableService.deleteTimetable(userId, timetableId);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -12,4 +12,7 @@ public interface EventRepository extends JpaRepository<EventEntity, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update EventEntity e set e.sourceNoticeId = null where e.sourceNoticeId = :noticeId")
     int clearSourceNotice(@Param("noticeId") Long noticeId);
+
+    // 해당 시간표 항목(timetable.id)에 연결된 일정이 있는지 확인 -> 시간표 항목 삭제 시 409
+    boolean existsByUserLectureId(Long userLectureId);
 }
