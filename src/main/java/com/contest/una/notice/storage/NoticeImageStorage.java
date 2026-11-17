@@ -1,15 +1,17 @@
 package com.contest.una.notice.storage;
 
+import com.contest.una.global.exception.ImageTooLargeException;
+import com.contest.una.global.exception.ImageUnreadableException;
 import com.contest.una.global.exception.InvalidRequestException;
+import com.contest.una.global.exception.UnsupportedImageFormatException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -44,10 +46,7 @@ public class NoticeImageStorage {
 
         // 파일 용량 검증
         if (image.getSize() > MAX_FILE_SIZE) {
-            throw new ResponseStatusException(
-                    HttpStatus.PAYLOAD_TOO_LARGE,
-                    "이미지 용량 제한을 초과했습니다."
-            );
+            throw new ImageTooLargeException();
         }
 
         // 실제 이미지 형식 검증
@@ -89,15 +88,16 @@ public class NoticeImageStorage {
                 ImageInputStream imageInput =
                         ImageIO.createImageInputStream(input)
         ) {
+            // 이미지로 인식할 수 없는 파일 -> 415
             if (imageInput == null) {
-                throw invalidImage();
+                throw new UnsupportedImageFormatException();
             }
 
             Iterator<ImageReader> readers =
                     ImageIO.getImageReaders(imageInput);
 
             if (!readers.hasNext()) {
-                throw invalidImage();
+                throw new UnsupportedImageFormatException();
             }
 
             ImageReader reader = readers.next();
@@ -106,17 +106,26 @@ public class NoticeImageStorage {
                 String format = reader.getFormatName()
                         .toLowerCase(Locale.ROOT);
 
+                // PNG/JPEG가 아닌 형식 -> 415
                 String extension = switch (format) {
                     case "jpeg", "jpg" -> "jpg";
                     case "png" -> "png";
-                    default -> throw invalidImage();
+                    default -> throw new UnsupportedImageFormatException();
                 };
 
                 reader.setInput(imageInput);
 
-                // 실제로 이미지를 읽을 수 있는지 검증
-                if (reader.read(0) == null) {
-                    throw invalidImage();
+                // PNG/JPEG로 인식되지만 실제로 읽을 수 없는 이미지 -> 422
+                // (try 안에서 우리가 던지는 예외까지 잡지 않도록 read만 감쌈)
+                BufferedImage decoded;
+                try {
+                    decoded = reader.read(0);
+                } catch (IOException | RuntimeException e) {
+                    throw new ImageUnreadableException(e);
+                }
+
+                if (decoded == null) {
+                    throw new ImageUnreadableException();
                 }
 
                 return extension;
@@ -126,14 +135,8 @@ public class NoticeImageStorage {
             }
 
         } catch (IOException e) {
-            throw invalidImage();
+            // 업로드된 파일 스트림 자체를 읽지 못한 경우
+            throw new ImageUnreadableException(e);
         }
-    }
-
-    private InvalidRequestException invalidImage() {
-        return new InvalidRequestException(
-                "image",
-                "읽을 수 있는 PNG 또는 JPEG 이미지를 업로드해 주세요."
-        );
     }
 }
