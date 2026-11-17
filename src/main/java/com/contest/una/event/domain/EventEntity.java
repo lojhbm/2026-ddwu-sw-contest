@@ -51,6 +51,9 @@ public class EventEntity extends BaseTimeEntity {
     @Column(name = "memo", columnDefinition = "TEXT")
     private String memo;
 
+    @Column(name = "completed", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean completed;
+
     @Builder
     public EventEntity(
             Long userId,
@@ -72,5 +75,26 @@ public class EventEntity extends BaseTimeEntity {
         this.eventDate = eventDate;
         this.eventTime = eventTime;
         this.memo = memo;
+    }
+
+    // 출처(sourceNoticeId, sourceImageId)와 완료 여부는 바꾸지 않음
+    public void update(
+            Long userLectureId,
+            String title,
+            String eventType,
+            LocalDate eventDate,
+            LocalTime eventTime,
+            String memo
+    ) {
+        this.userLectureId = userLectureId;
+        this.title = title;
+        this.eventType = eventType;
+        this.eventDate = eventDate;
+        this.eventTime = eventTime;
+        this.memo = memo;
+    }
+
+    public void changeCompleted(boolean completed) {
+        this.completed = completed;
     }
 }
