@@ -6,7 +6,31 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 public interface EventRepository extends JpaRepository<EventEntity, Long> {
+
+    // 본인 소유의 일정만 조회 (없거나 타인의 일정이면 비어 있음)
+    Optional<EventEntity> findByIdAndUserId(Long id, Long userId);
+
+    // 기간(startDate~endDate, 양 끝 포함) 안의 본인 일정 조회. userLectureId, eventType은 null이면 조건에서 제외
+    // 정렬: 날짜 -> 시각 -> id 오름차순 (MySQL은 오름차순에서 NULL이 먼저라 시각 미지정 일정이 그날 맨 앞에 옴)
+    @Query("""
+            select e from EventEntity e
+            where e.userId = :userId
+              and e.eventDate between :startDate and :endDate
+              and (:userLectureId is null or e.userLectureId = :userLectureId)
+              and (:eventType is null or e.eventType = :eventType)
+            order by e.eventDate asc, e.eventTime asc, e.id asc
+            """)
+    List<EventEntity> findAllInRange(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("userLectureId") Long userLectureId,
+            @Param("eventType") String eventType);
 
     // 공지가 삭제되면 그 공지를 출처로 한 일정은 유지하고 sourceNoticeId만 null로 변경
     @Modifying(clearAutomatically = true, flushAutomatically = true)

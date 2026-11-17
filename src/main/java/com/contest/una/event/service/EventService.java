@@ -2,8 +2,11 @@ package com.contest.una.event.service;
 
 import com.contest.una.event.domain.EventEntity;
 import com.contest.una.event.dto.EventCreateRequestDto;
-import com.contest.una.event.dto.EventCreateResponseDto;
+import com.contest.una.event.dto.EventResponse;
+import com.contest.una.event.dto.EventListResponseDto;
+import com.contest.una.event.dto.EventResponse;
 import com.contest.una.event.repository.EventRepository;
+import com.contest.una.global.exception.EventNotFoundException;
 import com.contest.una.global.exception.InvalidRequestException;
 import com.contest.una.global.exception.NoticeNotFoundException;
 import com.contest.una.global.exception.TimetableNotFoundException;
@@ -18,6 +21,7 @@ import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -35,8 +39,8 @@ public class EventService {
     private final TimetableRepository timetableRepository;
 
     @Transactional
-    public EventCreateResponseDto createEvent(Long userId, EventCreateRequestDto request) {
-        // 요청 값 형식 검증 (실패하면 400 VALIDATION_ERROR)
+    public EventResponse createEvent(Long userId, EventCreateRequestDto request) {
+        // 1. 요청 값 형식 검증 (실패하면 400 VALIDATION_ERROR)
         validatePositiveId("sourceNoticeId", request.getSourceNoticeId());
         validatePositiveId("userLectureId", request.getUserLectureId());
         String title = validateTitle(request.getTitle());
@@ -44,7 +48,7 @@ public class EventService {
         LocalDate eventDate = parseEventDate(request.getEventDate());
         LocalTime eventTime = parseEventTime(request.getEventTime());
 
-        // 출처 공지가 있으면 본인 소유인지 확인 (없거나 타인의 공지면 404)
+        // 2. 출처 공지가 있으면 본인 소유인지 확인 (없거나 타인의 공지면 404)
         NoticeEntity notice = null;
         if (request.getSourceNoticeId() != null) {
             notice = noticeRepository
@@ -52,7 +56,7 @@ public class EventService {
                     .orElseThrow(NoticeNotFoundException::new);
         }
 
-        // 시간표 항목: 요청값이 있으면 본인 소유인지 확인, 없으면 출처 공지의 값을 기본값으로 사용
+        // 3. 시간표 항목: 요청값이 있으면 본인 소유인지 확인, 없으면 출처 공지의 값을 기본값으로 사용
         Long userLectureId = request.getUserLectureId();
         if (userLectureId != null) {
             if (!timetableRepository.existsByIdAndUserId(userLectureId, userId)) {
@@ -75,7 +79,7 @@ public class EventService {
 
         EventEntity saved = eventRepository.save(event);
 
-        return EventCreateResponseDto.builder()
+        return EventResponse.builder()
                 .eventId(saved.getId())
                 .sourceNoticeId(saved.getSourceNoticeId())
                 .userLectureId(saved.getUserLectureId())
@@ -88,6 +92,88 @@ public class EventService {
                 .memo(saved.getMemo())
                 .createdAt(saved.getCreatedAt())
                 .updatedAt(saved.getUpdatedAt())
+                .build();
+    }
+
+    // 캘린더 일정 목록 조회: 기간(startDate~endDate 포함) 안의 본인 일정. 강의·유형은 선택 필터
+    @Transactional(readOnly = true)
+    public EventListResponseDto getEvents(
+            Long userId,
+            String startDateText,
+            String endDateText,
+            Long userLectureId,
+            String eventTypeText
+    ) {
+        // 1. 요청 값 형식 검증 (실패하면 400 VALIDATION_ERROR)
+        LocalDate startDate = parseDate("startDate", startDateText);
+        LocalDate endDate = parseDate("endDate", endDateText);
+        if (endDate.isBefore(startDate)) {
+            throw new InvalidRequestException("endDate", "종료일은 시작일보다 빠를 수 없습니다.");
+        }
+        validatePositiveId("userLectureId", userLectureId);
+        String eventType = eventTypeText == null ? null : validateEventType(eventTypeText);
+
+        // 2. 강의로 거르는 경우 본인 시간표 항목인지 확인 (없거나 타인의 항목이면 404)
+        if (userLectureId != null
+                && !timetableRepository.existsByIdAndUserId(userLectureId, userId)) {
+            throw new TimetableNotFoundException();
+        }
+
+        List<EventResponse> items = eventRepository
+                .findAllInRange(userId, startDate, endDate, userLectureId, eventType)
+                .stream()
+                .map(EventService::toResponse)
+                .toList();
+
+        return EventListResponseDto.builder()
+                .items(items)
+                .build();
+    }
+
+    // 일정 단건 조회 (없거나 타인의 일정이면 404)
+    @Transactional(readOnly = true)
+    public EventResponse getEvent(Long userId, Long eventId) {
+        validateEventId(eventId);
+
+        EventEntity event = eventRepository
+                .findByIdAndUserId(eventId, userId)
+                .orElseThrow(EventNotFoundException::new);
+
+        return toResponse(event);
+    }
+
+    // 일정 삭제 (없거나 타인의 일정이면 404)
+    @Transactional
+    public void deleteEvent(Long userId, Long eventId) {
+        validateEventId(eventId);
+
+        EventEntity event = eventRepository
+                .findByIdAndUserId(eventId, userId)
+                .orElseThrow(EventNotFoundException::new);
+
+        eventRepository.delete(event);
+    }
+
+    private static void validateEventId(Long eventId) {
+        if (eventId == null || eventId <= 0) {
+            throw new InvalidRequestException("eventId", "양의 정수 ID를 입력해 주세요.");
+        }
+    }
+
+    private static EventResponse toResponse(EventEntity event) {
+        return EventResponse.builder()
+                .eventId(event.getId())
+                .sourceNoticeId(event.getSourceNoticeId())
+                .userLectureId(event.getUserLectureId())
+                .title(event.getTitle())
+                .eventType(event.getEventType())
+                .eventDate(event.getEventDate().format(DateTimeFormatter.ISO_LOCAL_DATE))
+                .eventTime(event.getEventTime() == null
+                        ? null
+                        : event.getEventTime().format(TIME_FORMAT))
+                .memo(event.getMemo())
+                .createdAt(event.getCreatedAt())
+                .updatedAt(event.getUpdatedAt())
                 .build();
     }
 
@@ -126,17 +212,22 @@ public class EventService {
     }
 
     private static LocalDate parseEventDate(String eventDate) {
-        if (eventDate == null) {
-            throw new InvalidRequestException("eventDate", "필수 값입니다.");
+        return parseDate("eventDate", eventDate);
+    }
+
+    // 필수 날짜 값 검증. field는 에러 응답의 errors[].field에 들어감 (eventDate, startDate, endDate 등)
+    private static LocalDate parseDate(String field, String value) {
+        if (value == null) {
+            throw new InvalidRequestException(field, "필수 값입니다.");
         }
         // 2026-1-5 같은 형식을 막고, 2026-02-30 같은 존재하지 않는 날짜는 parse에서 걸러짐
-        if (!DATE_PATTERN.matcher(eventDate).matches()) {
-            throw new InvalidRequestException("eventDate", "YYYY-MM-DD 형식으로 입력해 주세요.");
+        if (!DATE_PATTERN.matcher(value).matches()) {
+            throw new InvalidRequestException(field, "YYYY-MM-DD 형식으로 입력해 주세요.");
         }
         try {
-            return LocalDate.parse(eventDate);
+            return LocalDate.parse(value);
         } catch (DateTimeException e) {
-            throw new InvalidRequestException("eventDate", "존재하는 날짜를 입력해 주세요.");
+            throw new InvalidRequestException(field, "존재하는 날짜를 입력해 주세요.");
         }
     }
 
