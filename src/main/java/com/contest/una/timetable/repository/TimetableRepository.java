@@ -24,4 +24,15 @@ public interface TimetableRepository extends JpaRepository<TimetableEntity, Long
             @Param("userId") Long userId,
             @Param("academicYear") Integer academicYear,
             @Param("semester") String semester);
+
+    @Query("""
+        select t from TimetableEntity t
+        join fetch t.lecture l
+        left join fetch l.classroom
+        where t.id in :timetableIds
+          and t.user.id = :userId
+        """)
+    List<TimetableEntity> findAllWithLectureByIdInAndUserId(
+            @Param("timetableIds") Collection<Long> timetableIds,
+            @Param("userId") Long userId);
 }
