@@ -98,7 +98,7 @@ public class ClassroomService {
                 .forEach(c -> byBuilding
                         .computeIfAbsent(c.getBuildingName(), name -> new ArrayList<>())
                         .add(ClassroomAvailabilityResponse.ClassroomItem.builder()
-                                .classroomId(String.valueOf(c.getId()))
+                                .classroomId(c.getId())
                                 .roomName(c.getRoomName())
                                 .nextLectureStartTime(formatOrNull(nextStarts.get(c.getId())))
                                 .build()));
