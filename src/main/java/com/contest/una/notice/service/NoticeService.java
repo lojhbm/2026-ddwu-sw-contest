@@ -1,6 +1,7 @@
 package com.contest.una.notice.service;
 
 import com.contest.una.global.exception.InvalidRequestException;
+import com.contest.una.global.exception.NoticeNotFoundException;
 import com.contest.una.notice.domain.NoticeEntity;
 import com.contest.una.notice.dto.*;
 import com.contest.una.notice.repository.NoticeRepository;
@@ -10,11 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -96,10 +95,7 @@ public class NoticeService {
 
         NoticeEntity notice = noticeRepository
                 .findByIdAndUserId(noticeId, userId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "NOTICE_NOT_FOUND"
-                ));
+                .orElseThrow(NoticeNotFoundException::new);
 
         List<String> actionItems = notice.getActionItems() == null
                 ? new ArrayList<>()
@@ -149,16 +145,11 @@ public class NoticeService {
         }
 
         NoticeEntity notice = noticeRepository.findById(noticeId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "NOTICE_NOT_FOUND"
-                ));
+                .orElseThrow(NoticeNotFoundException::new);
 
+        // 타인의 공지도 존재 여부를 드러내지 않도록 404로 응답
         if (!userId.equals(notice.getUserId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "NOTICE_NOT_FOUND"
-            );
+            throw new NoticeNotFoundException();
         }
 
         noticeRepository.delete(notice);
