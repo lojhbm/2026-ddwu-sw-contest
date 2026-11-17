@@ -11,6 +11,8 @@ import java.time.Instant;
 public class EventResponse {
     private Long eventId;
     private Long sourceNoticeId;
+    private Long sourceImageId;
+    private String imageUrl;   // 원본 이미지가 없으면 null
     private Long userLectureId;
     private String title;
     private String eventType;

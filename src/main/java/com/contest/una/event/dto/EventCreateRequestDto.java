@@ -10,6 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class EventCreateRequestDto {
     private Long sourceNoticeId;
+    private Long sourceImageId;
     private Long userLectureId;
     private String title;
     private String eventType;
