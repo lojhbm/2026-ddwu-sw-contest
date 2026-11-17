@@ -1,6 +1,8 @@
 package com.contest.una.timetable.repository;
 
 import com.contest.una.timetable.domain.LectureEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,6 +43,53 @@ public interface LectureRepository extends JpaRepository<LectureEntity, Long> {
             @Param("semester") String semester,
             @Param("timeWeek") Integer timeWeek,
             @Param("endTime") LocalTime endTime);
+
+    // 요일별 행을 분반(학수번호+분반) 단위로 묶어 페이징. pattern이 null이면 학기 전체
+    @Query(value = """
+            select l.courseCode as courseCode, l.sectionCode as sectionCode
+            from LectureEntity l
+            where l.academicYear = :academicYear
+              and l.semester = :semester
+              and (:pattern is null
+                   or lower(replace(l.name, ' ', '')) like :pattern escape '\\'
+                   or lower(l.courseCode) like :pattern escape '\\')
+            group by l.courseCode, l.sectionCode
+            order by min(l.name), l.courseCode, l.sectionCode
+            """,
+            countQuery = """
+            select count(distinct concat(l.courseCode, '|', l.sectionCode))
+            from LectureEntity l
+            where l.academicYear = :academicYear
+              and l.semester = :semester
+              and (:pattern is null
+                   or lower(replace(l.name, ' ', '')) like :pattern escape '\\'
+                   or lower(l.courseCode) like :pattern escape '\\')
+            """)
+    Page<SectionKey> searchSections(
+            @Param("academicYear") Integer academicYear,
+            @Param("semester") String semester,
+            @Param("pattern") String pattern,
+            Pageable pageable);
+
+    // sectionKeys: "학수번호|분반"
+    @Query("""
+            select l from LectureEntity l
+            left join fetch l.classroom
+            where l.academicYear = :academicYear
+              and l.semester = :semester
+              and concat(l.courseCode, '|', l.sectionCode) in :sectionKeys
+            order by l.timeWeek, l.timeStartsAt
+            """)
+    List<LectureEntity> findAllWithClassroomBySections(
+            @Param("academicYear") Integer academicYear,
+            @Param("semester") String semester,
+            @Param("sectionKeys") Collection<String> sectionKeys);
+
+    interface SectionKey {
+        String getCourseCode();
+
+        String getSectionCode();
+    }
 
     interface NextLectureStart {
         Long getClassroomId();
