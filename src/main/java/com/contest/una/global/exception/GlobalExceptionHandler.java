@@ -424,4 +424,16 @@ public class GlobalExceptionHandler {
                         List.of()
                 ));
     }
+
+    @ExceptionHandler(SpaceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleSpaceNotFound(
+            SpaceNotFoundException e
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "SPACE_NOT_FOUND",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
 }
