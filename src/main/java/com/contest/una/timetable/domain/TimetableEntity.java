@@ -40,4 +40,8 @@ public class TimetableEntity extends BaseTimeEntity {
         this.lecture = lecture;
         this.color = (color == null) ? DEFAULT_COLOR : color;
     }
+
+    public void updateColor(String color) {
+        this.color = color;
+    }
 }

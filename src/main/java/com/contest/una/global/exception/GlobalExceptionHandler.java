@@ -267,4 +267,16 @@ public class GlobalExceptionHandler {
                         ))
                 ));
     }
+
+    @ExceptionHandler(TimetableNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleTimetableNotFound(
+            TimetableNotFoundException e
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        "TIMETABLE_NOT_FOUND",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
 }

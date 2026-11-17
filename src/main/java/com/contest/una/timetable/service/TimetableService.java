@@ -3,6 +3,7 @@ package com.contest.una.timetable.service;
 import com.contest.una.classroom.domain.ClassroomEntity;
 import com.contest.una.global.exception.LectureNotFoundException;
 import com.contest.una.global.exception.TimetableAlreadyExistsException;
+import com.contest.una.global.exception.TimetableNotFoundException;
 import com.contest.una.global.exception.TimetableTimeConflictException;
 import com.contest.una.timetable.domain.LectureEntity;
 import com.contest.una.timetable.domain.TimetableEntity;
@@ -139,7 +140,7 @@ public class TimetableService {
         ClassroomEntity classroom = lecture.getClassroom();
 
         // 온라인 또는 미정이면 classroom = null
-        ClassroomResponse classroomResponse = (classroom == null)
+        ClassroomResponse classroomInfo = (classroom == null)
                 ? null
                 : new ClassroomResponse(
                 classroom.getId(),
@@ -155,11 +156,32 @@ public class TimetableService {
                 lecture.getSectionCode(),
                 lecture.getAcademicYear(),
                 lecture.getSemester(),
-                classroomResponse,
+                classroomInfo,
                 lecture.getTimeWeek(),
                 timetable.getColor(),
                 lecture.getTimeStartsAt(),
                 lecture.getTimeEndsAt()
         );
+    }
+
+    @Transactional
+    public UpdateTimetableColorResponse updateColor(
+            Long userId,
+            List<Long> timetableIds,
+            UpdateTimetableColorRequest request
+    ) {
+        // 본인 소유의 시간표 항목만 조회
+        List<TimetableEntity> timetables =
+                timetableRepository.findAllWithLectureByIdInAndUserId(timetableIds, userId);
+
+        // 하나라도 없거나 본인 소유가 아니면 404
+        if (timetables.size() != timetableIds.size()) {
+            throw new TimetableNotFoundException();
+        }
+
+        // 변경 감지로 color 수정
+        timetables.forEach(timetable -> timetable.updateColor(request.color()));
+
+        return UpdateTimetableColorResponse.from(timetables);
     }
 }

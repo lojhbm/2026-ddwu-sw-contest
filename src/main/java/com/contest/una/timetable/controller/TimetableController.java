@@ -1,20 +1,18 @@
 package com.contest.una.timetable.controller;
 
-import com.contest.una.timetable.dto.AddTimetableRequestDto;
-import com.contest.una.timetable.dto.AddTimetableResponseDto;
-import com.contest.una.timetable.dto.TimetableListResponse;
+import com.contest.una.timetable.dto.*;
 import com.contest.una.timetable.service.TimetableService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.UniqueElements;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Validated
 @RestController
@@ -42,5 +40,14 @@ public class TimetableController {
     {
 
         return ResponseEntity.ok(timetableService.getTimetable(userId, academicYear, semester));
+    }
+
+    @PutMapping
+    public ResponseEntity<UpdateTimetableColorResponse> updateColor(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam("timetableId") @NotEmpty @UniqueElements List<@NotNull Long> timetableIds,
+            @RequestBody @Valid UpdateTimetableColorRequest request
+    ) {
+        return ResponseEntity.ok(timetableService.updateColor(userId, timetableIds, request));
     }
 }

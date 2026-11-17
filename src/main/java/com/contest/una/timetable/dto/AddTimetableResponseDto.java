@@ -8,7 +8,7 @@ public record AddTimetableResponseDto(
         Integer academicYear,
         String semester,
         String color,
-        List<AddedItem> addedItems
+        List<TimetableItemResponse> addedItems
 ) {
     public static AddTimetableResponseDto of(Integer academicYear, String semester, String color,
                                           List<TimetableEntity> timetables) {
@@ -16,7 +16,7 @@ public record AddTimetableResponseDto(
                 academicYear,
                 semester,
                 color,
-                timetables.stream().map(AddedItem::from).toList()
+                timetables.stream().map(TimetableItemResponse::from).toList()
         );
     }
 }
