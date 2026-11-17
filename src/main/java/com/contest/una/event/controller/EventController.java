@@ -2,9 +2,11 @@ package com.contest.una.event.controller;
 
 import com.contest.una.event.dto.EventCaptureRequestDto;
 import com.contest.una.event.dto.EventCaptureResponseDto;
+import com.contest.una.event.dto.EventCompletionRequestDto;
 import com.contest.una.event.dto.EventCreateRequestDto;
 import com.contest.una.event.dto.EventResponse;
 import com.contest.una.event.dto.EventListResponseDto;
+import com.contest.una.event.dto.EventUpdateRequestDto;
 import com.contest.una.event.service.EventCaptureService;
 import com.contest.una.event.service.EventService;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +21,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -89,6 +93,24 @@ public class EventController {
             @PathVariable("eventId") Long eventId
     ) {
         return ResponseEntity.ok(eventService.getEvent(userId, eventId));
+    }
+
+    @PutMapping(value = "/{eventId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EventResponse> updateEvent(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("eventId") Long eventId,
+            @RequestBody EventUpdateRequestDto request
+    ) {
+        return ResponseEntity.ok(eventService.updateEvent(userId, eventId, request));
+    }
+
+    @PatchMapping(value = "/{eventId}/completion", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EventResponse> changeCompletion(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("eventId") Long eventId,
+            @RequestBody EventCompletionRequestDto request
+    ) {
+        return ResponseEntity.ok(eventService.changeCompletion(userId, eventId, request));
     }
 
     @DeleteMapping("/{eventId}")

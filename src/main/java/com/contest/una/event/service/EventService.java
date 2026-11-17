@@ -1,9 +1,11 @@
 package com.contest.una.event.service;
 
 import com.contest.una.event.domain.EventEntity;
+import com.contest.una.event.dto.EventCompletionRequestDto;
 import com.contest.una.event.dto.EventCreateRequestDto;
 import com.contest.una.event.dto.EventListResponseDto;
 import com.contest.una.event.dto.EventResponse;
+import com.contest.una.event.dto.EventUpdateRequestDto;
 import com.contest.una.event.repository.CaptureImageRepository;
 import com.contest.una.event.repository.EventRepository;
 import com.contest.una.global.exception.EventNotFoundException;
@@ -91,6 +93,47 @@ public class EventService {
                 .build();
 
         return toResponse(eventRepository.save(event));
+    }
+
+    @Transactional
+    public EventResponse updateEvent(Long userId, Long eventId, EventUpdateRequestDto request) {
+        validateEventId(eventId);
+        validatePositiveId("userLectureId", request.getUserLectureId());
+        String title = validateTitle(request.getTitle());
+        String eventType = validateEventType(request.getEventType());
+        LocalDate eventDate = parseEventDate(request.getEventDate());
+        LocalTime eventTime = parseEventTime(request.getEventTime());
+
+        EventEntity event = eventRepository
+                .findByIdAndUserId(eventId, userId)
+                .orElseThrow(EventNotFoundException::new);
+
+        if (request.getUserLectureId() != null
+                && !timetableRepository.existsByIdAndUserId(request.getUserLectureId(), userId)) {
+            throw new TimetableNotFoundException();
+        }
+
+        event.update(request.getUserLectureId(), title, eventType, eventDate, eventTime, request.getMemo());
+        eventRepository.flush();
+
+        return toResponse(event);
+    }
+
+    @Transactional
+    public EventResponse changeCompletion(Long userId, Long eventId, EventCompletionRequestDto request) {
+        validateEventId(eventId);
+        if (request.getCompleted() == null) {
+            throw new InvalidRequestException("completed", "필수 값입니다.");
+        }
+
+        EventEntity event = eventRepository
+                .findByIdAndUserId(eventId, userId)
+                .orElseThrow(EventNotFoundException::new);
+
+        event.changeCompleted(request.getCompleted());
+        eventRepository.flush();
+
+        return toResponse(event);
     }
 
     // 캘린더 일정 목록 조회: 기간(startDate~endDate 포함) 안의 본인 일정. 강의·유형은 선택 필터
@@ -197,6 +240,7 @@ public class EventService {
                         ? null
                         : event.getEventTime().format(TIME_FORMAT))
                 .memo(event.getMemo())
+                .completed(event.isCompleted())
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
                 .build();
