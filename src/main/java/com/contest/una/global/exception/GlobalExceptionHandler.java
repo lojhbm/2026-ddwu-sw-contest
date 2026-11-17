@@ -279,4 +279,16 @@ public class GlobalExceptionHandler {
                         List.of()
                 ));
     }
+
+    @ExceptionHandler(TimetableInUseException.class)
+    public ResponseEntity<ErrorResponse> handleTimetableInUse(
+            TimetableInUseException e
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        "TIMETABLE_IN_USE",
+                        e.getMessage(),
+                        List.of()
+                ));
+    }
 }
