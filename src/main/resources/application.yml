@@ -37,3 +37,10 @@ logging:
 jwt:
   secret: ${JWT_SECRET}
   expire-length: 3600000 # 1시간, 밀리초 단위
+
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: gemini-3.8-flash
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  connect-timeout-seconds: 5
+  read-timeout-seconds: 30
