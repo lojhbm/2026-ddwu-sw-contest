@@ -26,6 +26,10 @@ public class EventEntity extends BaseTimeEntity {
     @Column(name = "source_notice_id")
     private Long sourceNoticeId;
 
+    // 과제 캡처 이미지 ID. 직접 등록했으면 null
+    @Column(name = "source_image_id")
+    private Long sourceImageId;
+
     // timetable.id. null이면 강의와 관련 없는 일정
     @Column(name = "user_lecture_id")
     private Long userLectureId;
@@ -51,6 +55,7 @@ public class EventEntity extends BaseTimeEntity {
     public EventEntity(
             Long userId,
             Long sourceNoticeId,
+            Long sourceImageId,
             Long userLectureId,
             String title,
             String eventType,
@@ -60,6 +65,7 @@ public class EventEntity extends BaseTimeEntity {
     ) {
         this.userId = userId;
         this.sourceNoticeId = sourceNoticeId;
+        this.sourceImageId = sourceImageId;
         this.userLectureId = userLectureId;
         this.title = title;
         this.eventType = eventType;
