@@ -44,5 +44,5 @@ gemini:
   fallback-model: gemini-3.1-flash-lite # 기본 모델이 503/429로 계속 실패하거나 404일 때 사용. 비우면 fallback 없음
   base-url: https://generativelanguage.googleapis.com/v1beta
   connect-timeout-seconds: 5
-  read-timeout-seconds: 30
+  read-timeout-seconds: ${GEMINI_READ_TIMEOUT_SECONDS:30}
   thinking-level: low # 모델이 지원하지 않아 400이 나면 이 줄을 삭제

@@ -2,18 +2,21 @@ package com.contest.una.event.service;
 
 import com.contest.una.event.domain.EventEntity;
 import com.contest.una.event.dto.EventCreateRequestDto;
-import com.contest.una.event.dto.EventResponse;
 import com.contest.una.event.dto.EventListResponseDto;
 import com.contest.una.event.dto.EventResponse;
+import com.contest.una.event.repository.CaptureImageRepository;
 import com.contest.una.event.repository.EventRepository;
 import com.contest.una.global.exception.EventNotFoundException;
+import com.contest.una.global.exception.ImageNotFoundException;
 import com.contest.una.global.exception.InvalidRequestException;
 import com.contest.una.global.exception.NoticeNotFoundException;
 import com.contest.una.global.exception.TimetableNotFoundException;
 import com.contest.una.notice.domain.NoticeEntity;
 import com.contest.una.notice.repository.NoticeRepository;
+import com.contest.una.notice.storage.NoticeImageStorage;
 import com.contest.una.timetable.repository.TimetableRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,11 +40,15 @@ public class EventService {
     private final EventRepository eventRepository;
     private final NoticeRepository noticeRepository;
     private final TimetableRepository timetableRepository;
+    private final CaptureImageRepository captureImageRepository;
+    private final NoticeImageStorage imageStorage;
+    private final EventCaptureService eventCaptureService;
 
     @Transactional
     public EventResponse createEvent(Long userId, EventCreateRequestDto request) {
         // 1. 요청 값 형식 검증 (실패하면 400 VALIDATION_ERROR)
         validatePositiveId("sourceNoticeId", request.getSourceNoticeId());
+        validatePositiveId("sourceImageId", request.getSourceImageId());
         validatePositiveId("userLectureId", request.getUserLectureId());
         String title = validateTitle(request.getTitle());
         String eventType = validateEventType(request.getEventType());
@@ -54,6 +61,11 @@ public class EventService {
             notice = noticeRepository
                     .findByIdAndUserId(request.getSourceNoticeId(), userId)
                     .orElseThrow(NoticeNotFoundException::new);
+        }
+
+        if (request.getSourceImageId() != null
+                && !captureImageRepository.existsByIdAndUserId(request.getSourceImageId(), userId)) {
+            throw new ImageNotFoundException();
         }
 
         // 3. 시간표 항목: 요청값이 있으면 본인 소유인지 확인, 없으면 출처 공지의 값을 기본값으로 사용
@@ -69,6 +81,7 @@ public class EventService {
         EventEntity event = EventEntity.builder()
                 .userId(userId)
                 .sourceNoticeId(request.getSourceNoticeId())
+                .sourceImageId(request.getSourceImageId())
                 .userLectureId(userLectureId)
                 .title(title)
                 .eventType(eventType)
@@ -77,22 +90,7 @@ public class EventService {
                 .memo(request.getMemo())
                 .build();
 
-        EventEntity saved = eventRepository.save(event);
-
-        return EventResponse.builder()
-                .eventId(saved.getId())
-                .sourceNoticeId(saved.getSourceNoticeId())
-                .userLectureId(saved.getUserLectureId())
-                .title(saved.getTitle())
-                .eventType(saved.getEventType())
-                .eventDate(saved.getEventDate().format(DateTimeFormatter.ISO_LOCAL_DATE))
-                .eventTime(saved.getEventTime() == null
-                        ? null
-                        : saved.getEventTime().format(TIME_FORMAT))
-                .memo(saved.getMemo())
-                .createdAt(saved.getCreatedAt())
-                .updatedAt(saved.getUpdatedAt())
-                .build();
+        return toResponse(eventRepository.save(event));
     }
 
     // 캘린더 일정 목록 조회: 기간(startDate~endDate 포함) 안의 본인 일정. 강의·유형은 선택 필터
@@ -152,6 +150,29 @@ public class EventService {
                 .orElseThrow(EventNotFoundException::new);
 
         eventRepository.delete(event);
+        eventCaptureService.deleteIfUnused(event.getSourceImageId());
+    }
+
+    // 과제 캡처 이미지 우선, 없으면 출처 공지 이미지
+    @Transactional(readOnly = true)
+    public Resource getEventImage(Long userId, Long eventId) {
+        validateEventId(eventId);
+
+        EventEntity event = eventRepository
+                .findByIdAndUserId(eventId, userId)
+                .orElseThrow(EventNotFoundException::new);
+
+        if (event.getSourceImageId() != null) {
+            return captureImageRepository.findByIdAndUserId(event.getSourceImageId(), userId)
+                    .map(image -> imageStorage.load(image.getImagePath()))
+                    .orElseThrow(ImageNotFoundException::new);
+        }
+        if (event.getSourceNoticeId() != null) {
+            return noticeRepository.findByIdAndUserId(event.getSourceNoticeId(), userId)
+                    .map(notice -> imageStorage.load(notice.getImagePath()))
+                    .orElseThrow(ImageNotFoundException::new);
+        }
+        throw new ImageNotFoundException();
     }
 
     private static void validateEventId(Long eventId) {
@@ -164,6 +185,10 @@ public class EventService {
         return EventResponse.builder()
                 .eventId(event.getId())
                 .sourceNoticeId(event.getSourceNoticeId())
+                .sourceImageId(event.getSourceImageId())
+                .imageUrl(event.getSourceImageId() == null && event.getSourceNoticeId() == null
+                        ? null
+                        : "/api/v1/event/" + event.getId() + "/image")
                 .userLectureId(event.getUserLectureId())
                 .title(event.getTitle())
                 .eventType(event.getEventType())
