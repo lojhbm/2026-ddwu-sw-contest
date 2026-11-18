@@ -19,6 +19,7 @@ public class EventResponse {
     private String eventDate;  // YYYY-MM-DD
     private String eventTime;  // HH:mm:ss, 미지정이면 null
     private String memo;
+    private boolean completed;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -77,6 +77,7 @@ CREATE TABLE `events` (
                           `event_date`       DATE         NOT NULL,
                           `event_time`       TIME         NULL COMMENT 'NULL이면 시간 미지정',
                           `memo`             TEXT         NULL,
+                          `completed`        BOOLEAN      NOT NULL DEFAULT FALSE COMMENT '완료 여부',
                           `created_at`       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           `updated_at`       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
                           CONSTRAINT `PK_EVENTS` PRIMARY KEY (`id`)
