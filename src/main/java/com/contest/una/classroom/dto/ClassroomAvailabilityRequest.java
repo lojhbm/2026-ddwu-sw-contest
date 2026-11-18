@@ -2,10 +2,13 @@ package com.contest.una.classroom.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 // 빈 강의실 목록 조회 요청 본문 (GET /api/v1/classroom/availability)
+// 브라우저는 GET에 본문을 실을 수 없어 쿼리 파라미터로도 받음 (@Setter는 쿼리 바인딩용)
 // 필수 여부와 형식은 서비스에서 검증해 errors[].field가 정확히 내려가도록 함
 @Getter
+@Setter
 @NoArgsConstructor
 public class ClassroomAvailabilityRequest {
     private Integer academicYear;          // 개설 연도 (lectures.academic_year 기준)
